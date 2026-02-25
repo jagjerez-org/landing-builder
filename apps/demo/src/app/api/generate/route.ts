@@ -181,12 +181,15 @@ export async function POST(req: Request) {
       }
 
       case 'anthropic': {
-        // Priority: OAuth token > user API key > server key
-        const key = body.apiKey || (useServerKey ? process.env.ANTHROPIC_API_KEY : undefined) || process.env.ANTHROPIC_API_KEY;
-        if (!oauthToken && !key) return NextResponse.json({ error: 'No Anthropic credentials. Sign in with Claude or paste an API key.' }, { status: 400 });
+        // Priority: user OAuth token > user API key > server key (which may be OAuth)
+        const serverKey = process.env.ANTHROPIC_API_KEY;
+        const key = body.apiKey || serverKey;
+        const effectiveOAuth = oauthToken || (serverKey?.includes('sk-ant-oat') ? serverKey : undefined);
+        const effectiveApiKey = !effectiveOAuth ? key : undefined;
+        if (!effectiveOAuth && !effectiveApiKey) return NextResponse.json({ error: 'No Anthropic credentials. Sign in with Claude or paste an API key.' }, { status: 400 });
         result = await callAnthropic({
-          apiKey: key,
-          oauthToken,
+          apiKey: effectiveApiKey,
+          oauthToken: effectiveOAuth,
           model: model || 'claude-sonnet-4-20250514',
           systemPrompt: SYSTEM_PROMPT,
           userPrompt,
