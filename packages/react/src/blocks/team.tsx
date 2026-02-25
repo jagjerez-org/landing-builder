@@ -21,7 +21,7 @@ const Team: FC<TeamProps> = ({ headline, subheadline, members }) => (
 
 export const TeamBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'team', label: 'Team', icon: '👥', category: 'content',
-  renderer: Team as FC<Record<string, unknown>>,
+  renderer: Team as unknown as FC<Record<string, unknown>>,
   defaultProps: { headline: 'Meet the team', members: [
     { name: 'Alex Kim', role: 'CEO', bio: 'Visionary leader' },
     { name: 'Jordan Lee', role: 'CTO', bio: 'Tech architect' },

@@ -24,7 +24,7 @@ const Faq: FC<FaqProps> = ({ headline, items }) => {
 
 export const FaqBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'faq', label: 'FAQ', icon: '❓', category: 'social-proof',
-  renderer: Faq as FC<Record<string, unknown>>,
+  renderer: Faq as unknown as FC<Record<string, unknown>>,
   defaultProps: { headline: 'Frequently asked questions', items: [
     { question: 'How does it work?', answer: 'Simply describe your landing page and our AI generates it. Then customize with the visual editor.' },
     { question: 'Can I export the HTML?', answer: 'Yes! Export as clean static HTML or keep the JSON to render dynamically.' },

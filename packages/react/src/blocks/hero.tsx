@@ -21,7 +21,7 @@ export const HeroBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   label: 'Hero',
   icon: '🦸',
   category: 'content',
-  renderer: Hero as FC<Record<string, unknown>>,
+  renderer: Hero as unknown as FC<Record<string, unknown>>,
   defaultProps: {
     headline: 'Welcome to our platform',
     subheadline: 'Build something amazing today',

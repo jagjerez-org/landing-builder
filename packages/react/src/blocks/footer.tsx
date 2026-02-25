@@ -24,7 +24,7 @@ const Footer: FC<FooterProps> = ({ tagline, links, socials, copyright }) => (
 
 export const FooterBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'footer', label: 'Footer', icon: '🔗', category: 'navigation',
-  renderer: Footer as FC<Record<string, unknown>>,
+  renderer: Footer as unknown as FC<Record<string, unknown>>,
   defaultProps: { tagline: 'Built with Landing Builder', links: [
     { label: 'Home', url: '#', group: 'Product' }, { label: 'Features', url: '#features', group: 'Product' },
     { label: 'Pricing', url: '#pricing', group: 'Product' }, { label: 'Privacy', url: '#', group: 'Legal' },

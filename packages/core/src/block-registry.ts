@@ -3,7 +3,7 @@
  * Framework-agnostic: renderers are opaque values (React components, Vue components, etc.)
  */
 
-import type { SectionType } from './schema.js';
+import type { SectionType } from './schema';
 
 export class BlockRegistry<TRenderer = unknown> {
   private blocks = new Map<string, BlockDefinition<TRenderer>>();

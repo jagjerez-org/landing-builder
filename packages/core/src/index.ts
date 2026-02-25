@@ -38,23 +38,23 @@ export type {
   AccordionItem,
   CarouselProps,
   NavbarProps,
-} from './schema.js';
+} from './schema';
 
 // LLM Adapter
-export type { LlmAdapter, LlmMessage } from './llm-adapter.js';
-export { createOpenAIAdapter } from './llm-adapter.js';
+export type { LlmAdapter, LlmMessage } from './llm-adapter';
+export { createOpenAIAdapter } from './llm-adapter';
 
 // Prompt Engine
-export type { GenerateOptions } from './prompt-engine.js';
-export { generateFromPrompt } from './prompt-engine.js';
+export type { GenerateOptions } from './prompt-engine';
+export { generateFromPrompt } from './prompt-engine';
 
 // Block Registry
-export { BlockRegistry } from './block-registry.js';
-export type { BlockDefinition, PropField } from './block-registry.js';
+export { BlockRegistry } from './block-registry';
+export type { BlockDefinition, PropField } from './block-registry';
 
 // HTML Renderer
-export type { RenderHtmlOptions } from './html-renderer.js';
-export { renderToHtml } from './html-renderer.js';
+export type { RenderHtmlOptions } from './html-renderer';
+export { renderToHtml } from './html-renderer';
 
 // Editor Operations
 export {
@@ -66,4 +66,4 @@ export {
   toggleSection,
   duplicateSection,
   getUnusedSectionTypes,
-} from './editor-operations.js';
+} from './editor-operations';

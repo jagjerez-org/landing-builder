@@ -2,8 +2,8 @@
  * Prompt Engine — converts a user prompt into a LandingPage JSON.
  */
 
-import type { LandingPage, SectionType, ThemeConfig } from './schema.js';
-import type { LlmAdapter } from './llm-adapter.js';
+import type { LandingPage, SectionType, ThemeConfig } from './schema';
+import type { LlmAdapter } from './llm-adapter';
 
 export interface GenerateOptions {
   /** User's description of what they want */

@@ -22,7 +22,7 @@ export const CtaBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   label: 'Call to Action',
   icon: '📣',
   category: 'conversion',
-  renderer: Cta as FC<Record<string, unknown>>,
+  renderer: Cta as unknown as FC<Record<string, unknown>>,
   defaultProps: {
     headline: 'Ready to get started?',
     subheadline: 'Join thousands of happy customers today.',

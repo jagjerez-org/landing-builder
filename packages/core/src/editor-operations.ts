@@ -3,7 +3,7 @@
  * Used by framework-specific editors (React, Vue, Angular) as the logic layer.
  */
 
-import type { LandingPage, Section, SectionType } from './schema.js';
+import type { LandingPage, Section, SectionType } from './schema';
 
 /** Add a section at a specific position (or end) */
 export function addSection(

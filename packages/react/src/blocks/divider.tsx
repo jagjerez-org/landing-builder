@@ -8,6 +8,6 @@ const Divider: FC<DividerProps> = ({ color = '#e5e7eb', thickness = '1px', style
 
 export const DividerBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'divider', label: 'Divider', icon: '➖', category: 'custom',
-  renderer: Divider as FC<Record<string, unknown>>,
+  renderer: Divider as unknown as FC<Record<string, unknown>>,
   defaultProps: { color: '#e5e7eb', thickness: '1px', style: 'solid' },
 };

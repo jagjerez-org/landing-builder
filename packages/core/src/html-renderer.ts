@@ -13,7 +13,7 @@ import type {
   CtaProps,
   FaqProps,
   FooterProps,
-} from './schema.js';
+} from './schema';
 
 export interface RenderHtmlOptions {
   /** Include inline <style> with theme CSS variables */

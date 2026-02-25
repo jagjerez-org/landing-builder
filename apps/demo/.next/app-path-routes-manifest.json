@@ -1,0 +1,8 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/editor/page": "/editor",
+  "/gallery/page": "/gallery",
+  "/generate/page": "/generate",
+  "/page": "/",
+  "/preview/[slug]/page": "/preview/[slug]"
+}

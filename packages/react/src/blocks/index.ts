@@ -1,20 +1,20 @@
 import type { FC } from 'react';
 import { BlockRegistry } from '@landing-builder/core';
 import type { BlockDefinition } from '@landing-builder/core';
-import { HeroBlock } from './hero.js';
-import { FeaturesBlock } from './features.js';
-import { CtaBlock } from './cta.js';
-import { PricingBlock } from './pricing.js';
-import { TestimonialsBlock } from './testimonials.js';
-import { FaqBlock } from './faq.js';
-import { FooterBlock } from './footer.js';
-import { GalleryBlock } from './gallery.js';
-import { StatsBlock } from './stats.js';
-import { TeamBlock } from './team.js';
-import { ContactBlock } from './contact.js';
-import { SpacerBlock } from './spacer.js';
-import { DividerBlock } from './divider.js';
-import { EmbedBlock } from './embed.js';
+import { HeroBlock } from './hero';
+import { FeaturesBlock } from './features';
+import { CtaBlock } from './cta';
+import { PricingBlock } from './pricing';
+import { TestimonialsBlock } from './testimonials';
+import { FaqBlock } from './faq';
+import { FooterBlock } from './footer';
+import { GalleryBlock } from './gallery';
+import { StatsBlock } from './stats';
+import { TeamBlock } from './team';
+import { ContactBlock } from './contact';
+import { SpacerBlock } from './spacer';
+import { DividerBlock } from './divider';
+import { EmbedBlock } from './embed';
 
 type ReactBlock = BlockDefinition<FC<Record<string, unknown>>>;
 

@@ -23,7 +23,7 @@ export const FeaturesBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   label: 'Features',
   icon: '✨',
   category: 'content',
-  renderer: Features as FC<Record<string, unknown>>,
+  renderer: Features as unknown as FC<Record<string, unknown>>,
   defaultProps: {
     headline: 'Why choose us',
     features: [

@@ -19,7 +19,7 @@ const Stats: FC<StatsProps> = ({ headline, stats }) => (
 
 export const StatsBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'stats', label: 'Stats', icon: '📊', category: 'content',
-  renderer: Stats as FC<Record<string, unknown>>,
+  renderer: Stats as unknown as FC<Record<string, unknown>>,
   defaultProps: { headline: 'By the numbers', stats: [
     { value: '10K+', label: 'Users', icon: '👥' },
     { value: '99.9%', label: 'Uptime', icon: '⚡' },

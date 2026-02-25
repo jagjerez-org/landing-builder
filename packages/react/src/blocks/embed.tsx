@@ -14,6 +14,6 @@ const Embed: FC<EmbedProps> = ({ url, aspectRatio = '16:9', maxWidth }) => (
 
 export const EmbedBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'embed', label: 'Embed', icon: '🔗', category: 'custom',
-  renderer: Embed as FC<Record<string, unknown>>,
+  renderer: Embed as unknown as FC<Record<string, unknown>>,
   defaultProps: { url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', type: 'video', aspectRatio: '16:9' },
 };

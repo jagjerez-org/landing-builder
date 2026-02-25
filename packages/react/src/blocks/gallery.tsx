@@ -18,7 +18,7 @@ const Gallery: FC<GalleryProps> = ({ headline, images, columns = 3 }) => (
 
 export const GalleryBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'gallery', label: 'Gallery', icon: '🖼️', category: 'content',
-  renderer: Gallery as FC<Record<string, unknown>>,
+  renderer: Gallery as unknown as FC<Record<string, unknown>>,
   defaultProps: { headline: 'Gallery', columns: 3, layout: 'grid', images: [
     { src: 'https://placehold.co/600x400/3b82f6/white?text=Image+1', alt: 'Image 1' },
     { src: 'https://placehold.co/600x400/8b5cf6/white?text=Image+2', alt: 'Image 2' },

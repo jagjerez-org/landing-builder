@@ -22,7 +22,7 @@ const Testimonials: FC<TestimonialsProps> = ({ headline, testimonials, layout = 
 
 export const TestimonialsBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'testimonials', label: 'Testimonials', icon: '💬', category: 'social-proof',
-  renderer: Testimonials as FC<Record<string, unknown>>,
+  renderer: Testimonials as unknown as FC<Record<string, unknown>>,
   defaultProps: { headline: 'What our customers say', layout: 'grid', testimonials: [
     { quote: 'This product changed everything for us.', author: 'Sarah Chen', role: 'CEO at TechCo', rating: 5 },
     { quote: 'Incredible experience from start to finish.', author: 'Marcus Johnson', role: 'Founder', rating: 5 },

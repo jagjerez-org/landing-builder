@@ -27,7 +27,7 @@ const Contact: FC<ContactProps> = ({ headline, subheadline, email, phone, addres
 
 export const ContactBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'contact', label: 'Contact', icon: '📧', category: 'content',
-  renderer: Contact as FC<Record<string, unknown>>,
+  renderer: Contact as unknown as FC<Record<string, unknown>>,
   defaultProps: { headline: 'Get in touch', subheadline: "We'd love to hear from you", email: 'hello@example.com', formFields: [
     { type: 'text', name: 'name', label: 'Name', required: true, placeholder: 'Your name' },
     { type: 'email', name: 'email', label: 'Email', required: true, placeholder: 'you@example.com' },

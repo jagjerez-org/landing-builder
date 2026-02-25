@@ -6,9 +6,9 @@ import type { FC } from 'react';
 import React, { useState, useCallback } from 'react';
 import type { LandingPage, Section, SectionType } from '@landing-builder/core';
 import { renderToHtml } from '@landing-builder/core';
-import type { PageStateActions } from './use-page-state.js';
-import { LandingRenderer } from './landing-renderer.js';
-import { getAllBlocks, getBlock } from './blocks/index.js';
+import type { PageStateActions } from './use-page-state';
+import { LandingRenderer } from './landing-renderer';
+import { getAllBlocks, getBlock } from './blocks/index';
 
 export interface LandingEditorProps {
   page: LandingPage;

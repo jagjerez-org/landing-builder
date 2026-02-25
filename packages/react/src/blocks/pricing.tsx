@@ -24,7 +24,7 @@ const Pricing: FC<PricingProps> = ({ headline, subheadline, tiers }) => (
 
 export const PricingBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'pricing', label: 'Pricing', icon: '💰', category: 'conversion',
-  renderer: Pricing as FC<Record<string, unknown>>,
+  renderer: Pricing as unknown as FC<Record<string, unknown>>,
   defaultProps: { headline: 'Simple pricing', tiers: [
     { name: 'Free', price: '$0', period: 'mo', features: ['1 project', 'Basic support'], ctaText: 'Start Free', ctaUrl: '#', highlighted: false },
     { name: 'Pro', price: '$29', period: 'mo', features: ['Unlimited projects', 'Priority support', 'Analytics'], ctaText: 'Get Pro', ctaUrl: '#', highlighted: true },

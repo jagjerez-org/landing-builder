@@ -6,7 +6,7 @@ import type { FC } from 'react';
 import React from 'react';
 import type { LandingPage, Section } from '@landing-builder/core';
 import { renderToHtml } from '@landing-builder/core';
-import { getBlock } from './blocks/index.js';
+import { getBlock } from './blocks/index';
 
 export interface LandingRendererProps {
   page: LandingPage;
