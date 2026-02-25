@@ -34,98 +34,145 @@ Each section:
 SECTION TYPES AND THEIR PROPS:
 
 hero: { headline, subheadline, ctaText, ctaUrl, secondaryCtaText?, secondaryCtaUrl?, image?, layout: "centered"|"split"|"background" }
-
 features: { headline, subheadline?, features: [{ icon: "emoji", title, description }], columns: 2|3|4 }
-
 pricing: { headline, subheadline?, tiers: [{ name, price, period, features: string[], ctaText, ctaUrl, highlighted: boolean }] }
-
 testimonials: { headline, testimonials: [{ quote, author, role, avatar?, rating: 1-5 }], layout: "grid"|"carousel"|"stack" }
-
 cta: { headline, subheadline?, buttonText, buttonUrl, variant: "simple"|"with-input"|"split" }
-
 faq: { headline, items: [{ question, answer }] }
-
 footer: { logo?, tagline?, links: [{ label, url, group? }], socials: [{ platform, url }], copyright }
-
-gallery: { headline, images: [{ src: "https://placehold.co/800x600/COLOR/white?text=LABEL", alt, caption? }], columns: 2|3|4, layout: "grid"|"masonry" }
-
+gallery: { headline, images: [{ src: "https://placehold.co/800x600/COLOR/white?text=LABEL", alt, caption? }], columns: 2|3|4, layout: "grid" }
 stats: { headline?, stats: [{ value, label, icon: "emoji" }] }
-
 team: { headline, subheadline?, members: [{ name, role, avatar?, bio? }] }
-
 contact: { headline, subheadline?, email?, phone?, address?, formFields: [{ type: "text"|"email"|"tel"|"textarea"|"select", name, label, placeholder?, required?, options?: string[] }] }
 
-embed: { url, type: "iframe"|"video"|"map"|"calendar", aspectRatio: "16:9"|"4:3"|"1:1" }
-
-spacer: { height: "css value" }
-
-divider: { color?, thickness?, style: "solid"|"dashed"|"dotted" }
-
 RULES:
-1. Generate REAL, compelling copy — professional marketing quality. NO lorem ipsum.
-2. Use a cohesive color scheme that matches the business type
-3. Choose sections that make sense for the described business
-4. Always start with hero, end with footer
-5. Generate 5-8 sections for a complete page
-6. For images, use placehold.co with relevant colors: https://placehold.co/800x600/HEX/white?text=Relevant+Label (no # in hex)
-7. Match the tone to the business (playful for creative, professional for B2B, warm for hospitality)
-8. Include realistic pricing if relevant
-9. Generate 3-5 testimonials with realistic names and roles
-10. FAQ should have 4-6 real questions someone would ask
-11. Stats should use impressive but believable numbers`;
+1. Generate REAL, compelling, professional marketing copy. NO lorem ipsum.
+2. Cohesive color scheme matching the business type
+3. Always start with hero, end with footer
+4. Generate 5-8 sections
+5. For images use placehold.co: https://placehold.co/800x600/HEX/white?text=Label (no # in hex)
+6. Match tone to business type
+7. Include realistic pricing, testimonials (3-5), FAQ (4-6 items)
+8. Stats should be impressive but believable`;
+
+interface GenerateRequest {
+  prompt: string;
+  locale?: string;
+  provider: 'openai' | 'anthropic' | 'openclaw' | 'ollama' | 'custom';
+  apiKey?: string;
+  baseUrl?: string;
+  model?: string;
+}
 
 export async function POST(req: Request) {
   try {
-    const { prompt, locale } = await req.json();
+    const body: GenerateRequest = await req.json();
+    const { prompt, locale, provider, apiKey, baseUrl, model } = body;
 
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
     }
 
-    // Try OpenAI first, fall back to the configured model
-    const apiKey = process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.LLM_BASE_URL || 'https://api.openai.com/v1';
-    const model = process.env.LLM_MODEL || 'gpt-4o-mini';
-
-    if (!apiKey) {
-      return NextResponse.json({ error: 'No API key configured. Set OPENAI_API_KEY env var.' }, { status: 500 });
-    }
-
     let userMessage = prompt;
     if (locale && locale !== 'en') {
-      userMessage += `\n\nIMPORTANT: Generate ALL text content in ${locale}. Headlines, descriptions, button text, testimonials, FAQ — everything must be in ${locale}.`;
+      userMessage += `\n\nIMPORTANT: Generate ALL text content in ${locale}. Everything must be in ${locale}.`;
     }
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userMessage },
-        ],
-        temperature: 0.7,
-        max_tokens: 4096,
-      }),
-    });
+    let result: string;
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error('LLM error:', err);
-      return NextResponse.json({ error: `LLM request failed: ${response.status}` }, { status: 502 });
+    switch (provider) {
+      case 'openai':
+      case 'ollama':
+      case 'custom': {
+        const key = apiKey || process.env.OPENAI_API_KEY;
+        const url = baseUrl || (provider === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1');
+        const mdl = model || (provider === 'ollama' ? 'llama3.1' : 'gpt-4o-mini');
+
+        if (!key && provider !== 'ollama') {
+          return NextResponse.json({ error: `No API key provided for ${provider}` }, { status: 400 });
+        }
+
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (key) headers['Authorization'] = `Bearer ${key}`;
+
+        const res = await fetch(`${url}/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: mdl,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: userMessage },
+            ],
+            temperature: 0.7,
+            max_tokens: 4096,
+          }),
+        });
+        if (!res.ok) throw new Error(`${provider} API error (${res.status}): ${await res.text()}`);
+        const data = await res.json();
+        result = data.choices?.[0]?.message?.content ?? '';
+        break;
+      }
+
+      case 'anthropic': {
+        const key = apiKey || process.env.ANTHROPIC_API_KEY;
+        const url = baseUrl || 'https://api.anthropic.com/v1';
+        const mdl = model || 'claude-sonnet-4-20250514';
+
+        if (!key) {
+          return NextResponse.json({ error: 'No API key provided for Anthropic' }, { status: 400 });
+        }
+
+        const res = await fetch(`${url}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': key,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: mdl,
+            max_tokens: 4096,
+            system: SYSTEM_PROMPT,
+            messages: [{ role: 'user', content: userMessage }],
+          }),
+        });
+        if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text()}`);
+        const data = await res.json();
+        result = data.content?.filter((b: { type: string }) => b.type === 'text').map((b: { text: string }) => b.text).join('') ?? '';
+        break;
+      }
+
+      case 'openclaw': {
+        const url = baseUrl || 'http://localhost:18789';
+        const key = apiKey;
+
+        const res = await fetch(`${url}/v1/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(key ? { Authorization: `Bearer ${key}` } : {}),
+          },
+          body: JSON.stringify({
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: userMessage },
+            ],
+          }),
+        });
+        if (!res.ok) throw new Error(`OpenClaw agent error (${res.status}): ${await res.text()}`);
+        const data = await res.json();
+        result = data.choices?.[0]?.message?.content ?? data.response ?? JSON.stringify(data);
+        break;
+      }
+
+      default:
+        return NextResponse.json({ error: `Unknown provider: ${provider}` }, { status: 400 });
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content ?? '';
-
-    // Extract JSON (handle possible markdown fences)
-    const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-    const jsonStr = (jsonMatch?.[1] ?? content).trim();
-
+    // Extract JSON
+    const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const jsonStr = (jsonMatch?.[1] ?? result).trim();
     const page = JSON.parse(jsonStr);
     page.createdAt = new Date().toISOString();
     page.updatedAt = new Date().toISOString();
@@ -133,6 +180,7 @@ export async function POST(req: Request) {
     return NextResponse.json(page);
   } catch (err: unknown) {
     console.error('Generate error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

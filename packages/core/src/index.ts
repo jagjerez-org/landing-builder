@@ -56,6 +56,10 @@ export type { BlockDefinition, PropField } from './block-registry';
 export type { RenderHtmlOptions } from './html-renderer';
 export { renderToHtml } from './html-renderer';
 
+// Providers
+export { ProviderRegistry, PROVIDER_PRESETS } from './providers';
+export type { ProviderType, ProviderConfig, ProviderAuth } from './providers';
+
 // Editor Operations
 export {
   addSection,
