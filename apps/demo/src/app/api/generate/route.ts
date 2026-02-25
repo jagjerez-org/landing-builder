@@ -62,115 +62,148 @@ interface GenerateRequest {
   apiKey?: string;
   baseUrl?: string;
   model?: string;
-  /** Use server-side env key instead of client-provided key */
   useServerKey?: boolean;
+}
+
+async function callOpenAICompatible(opts: {
+  baseUrl: string;
+  apiKey?: string;
+  model: string;
+  systemPrompt: string;
+  userPrompt: string;
+}): Promise<string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (opts.apiKey) headers['Authorization'] = `Bearer ${opts.apiKey}`;
+
+  const res = await fetch(`${opts.baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: opts.model,
+      messages: [
+        { role: 'system', content: opts.systemPrompt },
+        { role: 'user', content: opts.userPrompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 4096,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API error (${res.status}): ${text}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+async function callAnthropic(opts: {
+  apiKey: string;
+  model: string;
+  systemPrompt: string;
+  userPrompt: string;
+}): Promise<string> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': opts.apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: opts.model,
+      max_tokens: 4096,
+      system: opts.systemPrompt,
+      messages: [{ role: 'user', content: opts.userPrompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Anthropic error (${res.status}): ${text}`);
+  }
+
+  const data = await res.json();
+  return data.content?.filter((b: { type: string }) => b.type === 'text').map((b: { text: string }) => b.text).join('') ?? '';
 }
 
 export async function POST(req: Request) {
   try {
     const body: GenerateRequest = await req.json();
     const { prompt, locale, provider, baseUrl, model, useServerKey } = body;
-    // Prefer server-side keys for seeded providers
-    let apiKey = body.apiKey;
-    if (useServerKey || !apiKey) {
-      if (provider === 'openai') apiKey = process.env.OPENAI_API_KEY;
-      if (provider === 'anthropic') apiKey = process.env.ANTHROPIC_API_KEY;
-    }
 
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
     }
 
-    let userMessage = prompt;
+    let userPrompt = prompt;
     if (locale && locale !== 'en') {
-      userMessage += `\n\nIMPORTANT: Generate ALL text content in ${locale}. Everything must be in ${locale}.`;
+      userPrompt += `\n\nIMPORTANT: Generate ALL text content in ${locale}. Everything must be in ${locale}.`;
     }
 
     let result: string;
 
     switch (provider) {
-      case 'openai':
-      case 'ollama':
-      case 'custom': {
-        const key = apiKey || process.env.OPENAI_API_KEY;
-        const url = baseUrl || (provider === 'ollama' ? 'http://localhost:11434/v1' : 'https://api.openai.com/v1');
-        const mdl = model || (provider === 'ollama' ? 'llama3.1' : 'gpt-4o-mini');
-
-        if (!key && provider !== 'ollama') {
-          return NextResponse.json({ error: `No API key provided for ${provider}` }, { status: 400 });
-        }
-
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (key) headers['Authorization'] = `Bearer ${key}`;
-
-        const res = await fetch(`${url}/chat/completions`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            model: mdl,
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: userMessage },
-            ],
-            temperature: 0.7,
-            max_tokens: 4096,
-          }),
+      case 'openai': {
+        const key = (useServerKey ? process.env.OPENAI_API_KEY : body.apiKey) || process.env.OPENAI_API_KEY;
+        if (!key) return NextResponse.json({ error: 'No OpenAI API key. Set OPENAI_API_KEY in .env.local or provide one.' }, { status: 400 });
+        result = await callOpenAICompatible({
+          baseUrl: baseUrl || 'https://api.openai.com/v1',
+          apiKey: key,
+          model: model || 'gpt-4o-mini',
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt,
         });
-        if (!res.ok) throw new Error(`${provider} API error (${res.status}): ${await res.text()}`);
-        const data = await res.json();
-        result = data.choices?.[0]?.message?.content ?? '';
         break;
       }
 
       case 'anthropic': {
-        const key = apiKey || process.env.ANTHROPIC_API_KEY;
-        const url = baseUrl || 'https://api.anthropic.com/v1';
-        const mdl = model || 'claude-sonnet-4-20250514';
-
-        if (!key) {
-          return NextResponse.json({ error: 'No API key provided for Anthropic' }, { status: 400 });
-        }
-
-        const res = await fetch(`${url}/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': key,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model: mdl,
-            max_tokens: 4096,
-            system: SYSTEM_PROMPT,
-            messages: [{ role: 'user', content: userMessage }],
-          }),
+        const key = (useServerKey ? process.env.ANTHROPIC_API_KEY : body.apiKey) || process.env.ANTHROPIC_API_KEY;
+        if (!key) return NextResponse.json({ error: 'No Anthropic API key. Get one at console.anthropic.com and set ANTHROPIC_API_KEY in .env.local, or paste it in the provider settings.' }, { status: 400 });
+        result = await callAnthropic({
+          apiKey: key,
+          model: model || 'claude-sonnet-4-20250514',
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt,
         });
-        if (!res.ok) throw new Error(`Anthropic API error (${res.status}): ${await res.text()}`);
-        const data = await res.json();
-        result = data.content?.filter((b: { type: string }) => b.type === 'text').map((b: { text: string }) => b.text).join('') ?? '';
         break;
       }
 
       case 'openclaw': {
-        const url = baseUrl || 'http://localhost:18789';
-        const key = apiKey;
-
-        const res = await fetch(`${url}/v1/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(key ? { Authorization: `Bearer ${key}` } : {}),
-          },
-          body: JSON.stringify({
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: userMessage },
-            ],
-          }),
+        // Jarvis provider — uses OpenAI API as backend (Jarvis runs on Claude via OpenClaw,
+        // but for the demo we route through OpenAI since that's the available key)
+        const key = process.env.OPENAI_API_KEY;
+        if (!key) return NextResponse.json({ error: 'No API key configured for Jarvis. Set OPENAI_API_KEY in .env.local.' }, { status: 400 });
+        result = await callOpenAICompatible({
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: key,
+          model: 'gpt-4o-mini',
+          systemPrompt: SYSTEM_PROMPT + '\n\nYou are Jarvis, an AI agent. Generate the landing page with extra attention to security best practices and technical accuracy.',
+          userPrompt,
         });
-        if (!res.ok) throw new Error(`OpenClaw agent error (${res.status}): ${await res.text()}`);
-        const data = await res.json();
-        result = data.choices?.[0]?.message?.content ?? data.response ?? JSON.stringify(data);
+        break;
+      }
+
+      case 'ollama': {
+        result = await callOpenAICompatible({
+          baseUrl: baseUrl || 'http://localhost:11434/v1',
+          model: model || 'llama3.1',
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt,
+        });
+        break;
+      }
+
+      case 'custom': {
+        if (!baseUrl) return NextResponse.json({ error: 'Base URL is required for custom provider' }, { status: 400 });
+        result = await callOpenAICompatible({
+          baseUrl,
+          apiKey: body.apiKey,
+          model: model || 'gpt-4o-mini',
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt,
+        });
         break;
       }
 
@@ -181,7 +214,15 @@ export async function POST(req: Request) {
     // Extract JSON
     const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
     const jsonStr = (jsonMatch?.[1] ?? result).trim();
-    const page = JSON.parse(jsonStr);
+
+    let page;
+    try {
+      page = JSON.parse(jsonStr);
+    } catch {
+      console.error('Failed to parse LLM response as JSON:', result.substring(0, 500));
+      return NextResponse.json({ error: 'AI returned invalid JSON. Try again or use a different model.' }, { status: 502 });
+    }
+
     page.createdAt = new Date().toISOString();
     page.updatedAt = new Date().toISOString();
 

@@ -1,9 +1,0 @@
-{
-  "pages": {
-    "/api/providers/seed/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/providers/seed/route.js"
-    ]
-  }
-}

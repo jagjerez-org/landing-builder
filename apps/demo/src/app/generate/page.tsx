@@ -71,7 +71,7 @@ export default function GeneratePage() {
   }, []);
 
   const provider = providers.find((p) => p.id === providerId);
-  const isReady = provider && (provider.hasKey || provider.ready === true || provider.id === 'custom');
+  const isReady = provider && (provider.hasKey || provider.ready === true || provider.id === 'custom' || !!customKey);
 
   const handleGenerate = async () => {
     if (!prompt.trim() || !provider) return;
@@ -87,10 +87,11 @@ export default function GeneratePage() {
         model: model || provider.model,
       };
 
-      // Use server key for seeded providers, custom key for others
-      if (provider.hasKey) {
+      // Use server key for seeded providers, user key for others
+      if (provider.hasKey && !customKey) {
         body.useServerKey = true;
-      } else if (customKey) {
+      }
+      if (customKey) {
         body.apiKey = customKey;
       }
       if (providerId === 'custom' && customUrl) {
@@ -181,10 +182,12 @@ export default function GeneratePage() {
                 </div>
               )}
 
-              {!provider.hasKey && provider.id !== 'custom' && provider.ready !== true && (
+              {!provider.hasKey && (provider as any).needsUserKey && provider.id !== 'custom' && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">API Key (or set in .env.local)</label>
-                  <input type="password" value={customKey} onChange={(e) => setCustomKey(e.target.value)} placeholder={`sk-...`} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <label className="block text-xs font-medium text-slate-500 mb-1">
+                    API Key {provider.id === 'anthropic' && <span className="text-slate-400">— get one at <a href="https://console.anthropic.com" target="_blank" className="text-blue-500 underline">console.anthropic.com</a></span>}
+                  </label>
+                  <input type="password" value={customKey} onChange={(e) => setCustomKey(e.target.value)} placeholder={provider.id === 'anthropic' ? 'sk-ant-api03-...' : 'sk-...'} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               )}
 
