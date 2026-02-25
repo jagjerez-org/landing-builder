@@ -1,0 +1,27 @@
+{
+  "name": "@landing-builder/react",
+  "version": "0.1.0",
+  "description": "React renderer and editor for @landing-builder/core",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "files": ["dist"],
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@landing-builder/core": "*"
+  },
+  "license": "MIT"
+}

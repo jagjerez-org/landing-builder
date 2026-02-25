@@ -1,0 +1,20 @@
+{
+  "name": "@landing-builder/vue",
+  "version": "0.1.0",
+  "description": "Vue 3 renderer and editor for @landing-builder/core",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "echo 'TODO: vue build'",
+    "test": "echo 'TODO: vue tests'"
+  },
+  "files": ["dist"],
+  "peerDependencies": {
+    "vue": ">=3.3"
+  },
+  "dependencies": {
+    "@landing-builder/core": "*"
+  },
+  "license": "MIT"
+}

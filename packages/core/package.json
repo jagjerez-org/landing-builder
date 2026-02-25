@@ -1,0 +1,20 @@
+{
+  "name": "@landing-builder/core",
+  "version": "0.1.0",
+  "description": "Framework-agnostic core: schema, prompt engine, and block registry",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "files": ["dist"],
+  "license": "MIT"
+}
