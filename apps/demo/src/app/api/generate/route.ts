@@ -62,12 +62,20 @@ interface GenerateRequest {
   apiKey?: string;
   baseUrl?: string;
   model?: string;
+  /** Use server-side env key instead of client-provided key */
+  useServerKey?: boolean;
 }
 
 export async function POST(req: Request) {
   try {
     const body: GenerateRequest = await req.json();
-    const { prompt, locale, provider, apiKey, baseUrl, model } = body;
+    const { prompt, locale, provider, baseUrl, model, useServerKey } = body;
+    // Prefer server-side keys for seeded providers
+    let apiKey = body.apiKey;
+    if (useServerKey || !apiKey) {
+      if (provider === 'openai') apiKey = process.env.OPENAI_API_KEY;
+      if (provider === 'anthropic') apiKey = process.env.ANTHROPIC_API_KEY;
+    }
 
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
