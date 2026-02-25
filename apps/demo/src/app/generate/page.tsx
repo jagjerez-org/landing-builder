@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { startAnthropicOAuth, startOpenAIOAuth, getProviderToken, clearProviderToken, type OAuthTokens } from '@/lib/oauth';
 
 interface ProviderInfo {
   id: string;
@@ -13,6 +14,7 @@ interface ProviderInfo {
   baseUrl: string;
   model: string;
   ready?: boolean;
+  needsUserKey?: boolean;
   models: { id: string; label: string }[];
 }
 
@@ -45,6 +47,17 @@ export default function GeneratePage() {
   const [error, setError] = useState('');
   const [progress, setProgress] = useState('');
   const [seedLoading, setSeedLoading] = useState(true);
+  const [oauthTokens, setOauthTokens] = useState<Record<string, OAuthTokens>>({});
+
+  // Load OAuth tokens from localStorage
+  useEffect(() => {
+    const stored: Record<string, OAuthTokens> = {};
+    for (const p of ['anthropic', 'openai']) {
+      const t = getProviderToken(p);
+      if (t) stored[p] = t;
+    }
+    setOauthTokens(stored);
+  }, []);
 
   // Auto-detect available providers from server
   useEffect(() => {
@@ -52,11 +65,8 @@ export default function GeneratePage() {
       .then((r) => r.json())
       .then((data) => {
         const p: ProviderInfo[] = data.providers || [];
-        setProviders([
-          ...p,
-          { id: 'custom', name: 'Custom API', icon: '🔌', description: 'Any OpenAI-compatible endpoint', baseUrl: '', model: '', models: [] },
-        ]);
-        // Auto-select first provider with a key
+        setProviders(p);
+        // Auto-select first ready provider
         const ready = p.find((x) => x.hasKey || x.ready);
         if (ready) {
           setProviderId(ready.id);
@@ -71,7 +81,52 @@ export default function GeneratePage() {
   }, []);
 
   const provider = providers.find((p) => p.id === providerId);
-  const isReady = provider && (provider.hasKey || provider.ready === true || provider.id === 'custom' || !!customKey);
+  const oauthToken = oauthTokens[providerId];
+  const isReady = provider && (provider.hasKey || provider.ready === true || oauthToken || customKey || provider.id === 'custom');
+
+  const handleOAuthLogin = useCallback(async (pid: string) => {
+    if (pid === 'anthropic') {
+      const url = await startAnthropicOAuth();
+      // Anthropic uses a code-paste flow (no redirect back to us)
+      // Open in new window, user copies the code
+      window.open(url, '_blank', 'width=600,height=700');
+      const code = window.prompt('After signing in, paste the authorization code here:');
+      if (!code) return;
+
+      const res = await fetch('/api/auth/anthropic/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: code.split('#')[0],
+          state: code.split('#')[1],
+          verifier: sessionStorage.getItem('anthropic_oauth_verifier'),
+        }),
+      });
+      if (!res.ok) {
+        setError(`Anthropic auth failed: ${await res.text()}`);
+        return;
+      }
+      const tokens: OAuthTokens = await res.json();
+      // Save
+      const all = JSON.parse(localStorage.getItem('lb-oauth-tokens') || '{}');
+      all.anthropic = tokens;
+      localStorage.setItem('lb-oauth-tokens', JSON.stringify(all));
+      setOauthTokens((prev) => ({ ...prev, anthropic: tokens }));
+    } else if (pid === 'openai') {
+      const callbackUrl = `${window.location.origin}/auth/callback/openai`;
+      const url = await startOpenAIOAuth(callbackUrl);
+      window.location.href = url;
+    }
+  }, []);
+
+  const handleDisconnect = (pid: string) => {
+    clearProviderToken(pid);
+    setOauthTokens((prev) => {
+      const next = { ...prev };
+      delete next[pid];
+      return next;
+    });
+  };
 
   const handleGenerate = async () => {
     if (!prompt.trim() || !provider) return;
@@ -87,13 +142,15 @@ export default function GeneratePage() {
         model: model || provider.model,
       };
 
-      // Use server key for seeded providers, user key for others
-      if (provider.hasKey && !customKey) {
+      // Send OAuth token if available
+      if (oauthToken) {
+        body.oauthToken = oauthToken.accessToken;
+      } else if (provider.hasKey) {
         body.useServerKey = true;
-      }
-      if (customKey) {
+      } else if (customKey) {
         body.apiKey = customKey;
       }
+
       if (providerId === 'custom' && customUrl) {
         body.baseUrl = customUrl;
       }
@@ -131,19 +188,23 @@ export default function GeneratePage() {
         <h1 className="text-4xl font-extrabold text-slate-900 mt-4 mb-2">
           <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Generate</span> your landing page
         </h1>
-        <p className="text-lg text-slate-500 mb-8">Choose your AI provider, describe what you want.</p>
+        <p className="text-lg text-slate-500 mb-8">Sign in with your AI provider or paste a key.</p>
 
         {/* Provider Selector */}
         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-6">
           <label className="text-sm font-semibold text-slate-700 mb-4 block">AI Provider</label>
 
           {seedLoading ? (
-            <div className="flex items-center gap-2 text-sm text-slate-400 py-4"><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg> Detecting available providers...</div>
+            <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+              Detecting providers...
+            </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
               {providers.map((p) => {
                 const active = providerId === p.id;
-                const available = p.hasKey || p.ready === true || p.id === 'custom';
+                const hasOAuth = !!oauthTokens[p.id];
+                const available = p.hasKey || p.ready === true || hasOAuth || p.id === 'custom';
                 return (
                   <button
                     key={p.id}
@@ -151,21 +212,15 @@ export default function GeneratePage() {
                     className={`relative p-4 rounded-xl text-left transition-all ${
                       active ? 'bg-blue-50 border-2 border-blue-500 shadow-sm' :
                       available ? 'bg-white border-2 border-slate-200 hover:border-blue-300 hover:shadow' :
-                      'bg-slate-50 border-2 border-slate-100 opacity-50'
+                      'bg-white border-2 border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     <div className="text-2xl mb-2">{p.icon}</div>
                     <div className="font-semibold text-sm text-slate-900">{p.name}</div>
                     <div className="text-xs text-slate-500 mt-0.5 leading-tight">{p.description}</div>
                     {/* Status badge */}
-                    {p.hasKey && (
-                      <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-green-400 shadow shadow-green-200" title={`Key: ${p.maskedKey}`} />
-                    )}
-                    {p.ready === true && !p.hasKey && (
-                      <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-green-400 shadow shadow-green-200" title="Connected" />
-                    )}
-                    {p.ready === false && !p.hasKey && p.id !== 'custom' && (
-                      <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-red-400 shadow shadow-red-200" title="Not available" />
+                    {(p.hasKey || hasOAuth || p.ready === true) && (
+                      <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-green-400 shadow shadow-green-200" title={hasOAuth ? 'Signed in via OAuth' : p.maskedKey ? `Key: ${p.maskedKey}` : 'Connected'} />
                     )}
                   </button>
                 );
@@ -176,21 +231,55 @@ export default function GeneratePage() {
           {/* Provider details */}
           {provider && (
             <div className="space-y-3 pt-2 border-t border-slate-100">
-              {provider.hasKey && (
+
+              {/* OAuth connected */}
+              {oauthToken && (
+                <div className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2">
+                  <span className="text-sm text-green-700 flex items-center gap-2">
+                    ✓ Signed in via OAuth
+                  </span>
+                  <button onClick={() => handleDisconnect(providerId)} className="text-xs text-red-500 hover:text-red-700 font-medium">
+                    Disconnect
+                  </button>
+                </div>
+              )}
+
+              {/* Server key */}
+              {!oauthToken && provider.hasKey && (
                 <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
-                  <span>✓</span> Server key configured: <code className="bg-green-100 px-1.5 py-0.5 rounded text-xs">{provider.maskedKey}</code>
+                  <span>✓</span> Server key: <code className="bg-green-100 px-1.5 py-0.5 rounded text-xs">{provider.maskedKey}</code>
                 </div>
               )}
 
-              {!provider.hasKey && (provider as any).needsUserKey && provider.id !== 'custom' && (
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">
-                    API Key {provider.id === 'anthropic' && <span className="text-slate-400">— get one at <a href="https://console.anthropic.com" target="_blank" className="text-blue-500 underline">console.anthropic.com</a></span>}
-                  </label>
-                  <input type="password" value={customKey} onChange={(e) => setCustomKey(e.target.value)} placeholder={provider.id === 'anthropic' ? 'sk-ant-api03-...' : 'sk-...'} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              {/* OAuth sign-in buttons */}
+              {!oauthToken && !provider.hasKey && (provider.id === 'openai' || provider.id === 'anthropic') && (
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleOAuthLogin(provider.id)}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-white transition-all hover:shadow-lg hover:-translate-y-0.5 ${
+                      provider.id === 'anthropic'
+                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:shadow-orange-500/25'
+                        : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:shadow-emerald-500/25'
+                    }`}
+                  >
+                    {provider.icon} Sign in with {provider.id === 'anthropic' ? 'Claude' : 'ChatGPT'}
+                  </button>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <div className="flex-1 h-px bg-slate-200" />
+                    or paste an API key
+                    <div className="flex-1 h-px bg-slate-200" />
+                  </div>
+                  <input
+                    type="password"
+                    value={customKey}
+                    onChange={(e) => setCustomKey(e.target.value)}
+                    placeholder={provider.id === 'anthropic' ? 'sk-ant-api03-...' : 'sk-...'}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
               )}
 
+              {/* Custom provider */}
               {provider.id === 'custom' && (
                 <>
                   <div>
@@ -204,6 +293,7 @@ export default function GeneratePage() {
                 </>
               )}
 
+              {/* Model selector */}
               {provider.models.length > 1 && (
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Model</label>

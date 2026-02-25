@@ -59,12 +59,16 @@ interface GenerateRequest {
   prompt: string;
   locale?: string;
   provider: 'openai' | 'anthropic' | 'openclaw' | 'ollama' | 'custom';
-  apiKey?: string;
+  apiKey?: string;       // User-pasted API key
+  oauthToken?: string;   // OAuth access token
   baseUrl?: string;
   model?: string;
   useServerKey?: boolean;
 }
 
+/**
+ * Call OpenAI-compatible API (works for OpenAI, Ollama, custom endpoints)
+ */
 async function callOpenAICompatible(opts: {
   baseUrl: string;
   apiKey?: string;
@@ -98,19 +102,36 @@ async function callOpenAICompatible(opts: {
   return data.choices?.[0]?.message?.content ?? '';
 }
 
+/**
+ * Call Anthropic Messages API
+ * Supports both x-api-key (API key) and Bearer auth (OAuth token)
+ */
 async function callAnthropic(opts: {
-  apiKey: string;
+  apiKey?: string;
+  oauthToken?: string;
   model: string;
   systemPrompt: string;
   userPrompt: string;
 }): Promise<string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'anthropic-version': '2023-06-01',
+  };
+
+  if (opts.oauthToken) {
+    // OAuth token — Bearer auth with special beta headers (same as Claude Code / OpenClaw)
+    headers['Authorization'] = `Bearer ${opts.oauthToken}`;
+    headers['anthropic-beta'] = 'oauth-2025-04-20';
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  } else if (opts.apiKey) {
+    headers['x-api-key'] = opts.apiKey;
+  } else {
+    throw new Error('No Anthropic credentials');
+  }
+
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': opts.apiKey,
-      'anthropic-version': '2023-06-01',
-    },
+    headers,
     body: JSON.stringify({
       model: opts.model,
       max_tokens: 4096,
@@ -131,7 +152,7 @@ async function callAnthropic(opts: {
 export async function POST(req: Request) {
   try {
     const body: GenerateRequest = await req.json();
-    const { prompt, locale, provider, baseUrl, model, useServerKey } = body;
+    const { prompt, locale, provider, baseUrl, model, useServerKey, oauthToken } = body;
 
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
@@ -146,11 +167,12 @@ export async function POST(req: Request) {
 
     switch (provider) {
       case 'openai': {
-        const key = (useServerKey ? process.env.OPENAI_API_KEY : body.apiKey) || process.env.OPENAI_API_KEY;
-        if (!key) return NextResponse.json({ error: 'No OpenAI API key. Set OPENAI_API_KEY in .env.local or provide one.' }, { status: 400 });
+        // Priority: OAuth token > user API key > server key
+        const token = oauthToken || body.apiKey || (useServerKey ? process.env.OPENAI_API_KEY : undefined) || process.env.OPENAI_API_KEY;
+        if (!token) return NextResponse.json({ error: 'No OpenAI credentials. Sign in with OpenAI or paste an API key.' }, { status: 400 });
         result = await callOpenAICompatible({
           baseUrl: baseUrl || 'https://api.openai.com/v1',
-          apiKey: key,
+          apiKey: token,
           model: model || 'gpt-4o-mini',
           systemPrompt: SYSTEM_PROMPT,
           userPrompt,
@@ -159,10 +181,12 @@ export async function POST(req: Request) {
       }
 
       case 'anthropic': {
-        const key = (useServerKey ? process.env.ANTHROPIC_API_KEY : body.apiKey) || process.env.ANTHROPIC_API_KEY;
-        if (!key) return NextResponse.json({ error: 'No Anthropic API key. Get one at console.anthropic.com and set ANTHROPIC_API_KEY in .env.local, or paste it in the provider settings.' }, { status: 400 });
+        // Priority: OAuth token > user API key > server key
+        const key = body.apiKey || (useServerKey ? process.env.ANTHROPIC_API_KEY : undefined) || process.env.ANTHROPIC_API_KEY;
+        if (!oauthToken && !key) return NextResponse.json({ error: 'No Anthropic credentials. Sign in with Claude or paste an API key.' }, { status: 400 });
         result = await callAnthropic({
           apiKey: key,
+          oauthToken,
           model: model || 'claude-sonnet-4-20250514',
           systemPrompt: SYSTEM_PROMPT,
           userPrompt,
@@ -171,15 +195,14 @@ export async function POST(req: Request) {
       }
 
       case 'openclaw': {
-        // Jarvis provider — uses OpenAI API as backend (Jarvis runs on Claude via OpenClaw,
-        // but for the demo we route through OpenAI since that's the available key)
-        const key = process.env.OPENAI_API_KEY;
-        if (!key) return NextResponse.json({ error: 'No API key configured for Jarvis. Set OPENAI_API_KEY in .env.local.' }, { status: 400 });
+        // Jarvis: use OAuth token or fall back to OpenAI key
+        const token = oauthToken || process.env.OPENAI_API_KEY;
+        if (!token) return NextResponse.json({ error: 'No credentials configured for Jarvis.' }, { status: 400 });
         result = await callOpenAICompatible({
           baseUrl: 'https://api.openai.com/v1',
-          apiKey: key,
+          apiKey: token,
           model: 'gpt-4o-mini',
-          systemPrompt: SYSTEM_PROMPT + '\n\nYou are Jarvis, an AI agent. Generate the landing page with extra attention to security best practices and technical accuracy.',
+          systemPrompt: SYSTEM_PROMPT + '\n\nYou are Jarvis, an AI agent. Generate with extra attention to security and technical accuracy.',
           userPrompt,
         });
         break;
