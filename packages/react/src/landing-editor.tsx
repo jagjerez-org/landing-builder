@@ -14,9 +14,7 @@ export interface LandingEditorProps {
   page: LandingPage;
   actions: PageStateActions;
   className?: string;
-  /** Called when user clicks "Export HTML" */
   onExportHtml?: (html: string) => void;
-  /** Called when user clicks "Export JSON" */
   onExportJson?: (json: LandingPage) => void;
 }
 
@@ -43,19 +41,16 @@ export const LandingEditor: FC<LandingEditorProps> = ({ page, actions, className
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
   const handleDragOver = (e: React.DragEvent, idx: number) => { e.preventDefault(); setDragOverIdx(idx); };
   const handleDrop = (idx: number) => {
-    if (draggedIdx !== null && draggedIdx !== idx) {
-      actions.moveSection(sorted[draggedIdx].id, idx);
-    }
-    setDraggedIdx(null);
-    setDragOverIdx(null);
+    if (draggedIdx !== null && draggedIdx !== idx) actions.moveSection(sorted[draggedIdx].id, idx);
+    setDraggedIdx(null); setDragOverIdx(null);
   };
 
   if (previewMode) {
     return (
       <div className={className}>
-        <div style={{ padding: '0.5rem 1rem', background: '#111', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 600 }}>Preview Mode</span>
-          <button onClick={() => setPreviewMode(false)} style={toolbarBtn}>← Back to Editor</button>
+        <div className="px-4 py-3 bg-gray-900 text-white flex items-center justify-between">
+          <span className="font-semibold text-sm">Preview Mode</span>
+          <button onClick={() => setPreviewMode(false)} className="px-4 py-1.5 text-sm font-medium bg-white/10 hover:bg-white/20 rounded-lg transition-colors">← Back to Editor</button>
         </div>
         <LandingRenderer page={page} useComponents={true} />
       </div>
@@ -63,13 +58,14 @@ export const LandingEditor: FC<LandingEditorProps> = ({ page, actions, className
   }
 
   return (
-    <div className={className} style={{ display: 'flex', height: '100vh', fontFamily: 'system-ui, sans-serif', fontSize: '0.875rem' }}>
+    <div className={`${className ?? ''} flex h-screen font-[system-ui] text-sm`}>
       {/* ── LEFT: Section List ── */}
-      <aside style={{ width: 240, background: '#f9fafb', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '0.75rem', borderBottom: '1px solid #e5e7eb', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280' }}>
-          Sections
+      <aside className="w-60 bg-gray-900 text-white flex flex-col overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-[10px] font-bold">LB</div>
+          <span className="font-bold text-xs uppercase tracking-wider text-gray-400">Sections</span>
         </div>
-        <div style={{ flex: 1, overflow: 'auto', padding: '0.5rem' }}>
+        <div className="flex-1 overflow-auto p-2 space-y-1">
           {sorted.map((section, idx) => {
             const block = getBlock(section.type);
             return (
@@ -81,106 +77,122 @@ export const LandingEditor: FC<LandingEditorProps> = ({ page, actions, className
                 onDrop={() => handleDrop(idx)}
                 onDragEnd={() => { setDraggedIdx(null); setDragOverIdx(null); }}
                 onClick={() => setSelectedId(section.id)}
-                style={{
-                  padding: '0.5rem 0.75rem', marginBottom: 4, borderRadius: 6, cursor: 'grab',
-                  background: selectedId === section.id ? '#dbeafe' : dragOverIdx === idx ? '#f3f4f6' : 'white',
-                  border: selectedId === section.id ? '1px solid #3b82f6' : '1px solid #e5e7eb',
-                  opacity: section.visible ? 1 : 0.4,
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-grab transition-all duration-150 ${
+                  selectedId === section.id ? 'bg-blue-600/30 ring-1 ring-blue-500/50' :
+                  dragOverIdx === idx ? 'bg-white/10' : 'hover:bg-white/5'
+                } ${section.visible ? 'opacity-100' : 'opacity-40'}`}
               >
-                <span>{block?.icon} {block?.label ?? section.type}</span>
-                <div style={{ display: 'flex', gap: 2 }}>
-                  <button onClick={(e) => { e.stopPropagation(); actions.toggleSection(section.id); }} style={iconBtn} title="Toggle">{section.visible ? '👁' : '👁‍🗨'}</button>
-                  <button onClick={(e) => { e.stopPropagation(); actions.duplicateSection(section.id); }} style={iconBtn} title="Duplicate">📋</button>
-                  <button onClick={(e) => { e.stopPropagation(); actions.removeSection(section.id); if (selectedId === section.id) setSelectedId(null); }} style={iconBtn} title="Delete">🗑</button>
+                <span className="truncate flex items-center gap-2">
+                  <span>{block?.icon}</span>
+                  <span className="text-gray-300">{block?.label ?? section.type}</span>
+                </span>
+                <div className="flex gap-0.5">
+                  <button onClick={(e) => { e.stopPropagation(); actions.toggleSection(section.id); }} className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors" title="Toggle">{section.visible ? '👁' : '👁‍🗨'}</button>
+                  <button onClick={(e) => { e.stopPropagation(); actions.duplicateSection(section.id); }} className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-white transition-colors" title="Duplicate">📋</button>
+                  <button onClick={(e) => { e.stopPropagation(); actions.removeSection(section.id); if (selectedId === section.id) setSelectedId(null); }} className="p-1 rounded hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-colors" title="Delete">🗑</button>
                 </div>
               </div>
             );
           })}
         </div>
-        <button onClick={() => setShowCatalog(!showCatalog)} style={{ margin: '0.5rem', padding: '0.5rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer' }}>
+        <button
+          onClick={() => setShowCatalog(!showCatalog)}
+          className="m-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25"
+        >
           + Add Block
         </button>
       </aside>
 
       {/* ── CENTER: Canvas ── */}
-      <main style={{ flex: 1, overflow: 'auto', background: '#f3f4f6', position: 'relative' }}>
+      <main className="flex-1 overflow-auto bg-gray-100 relative">
         {/* Toolbar */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 10, padding: '0.5rem 1rem', background: 'white', borderBottom: '1px solid #e5e7eb', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button onClick={actions.undo} disabled={!actions.canUndo} style={toolbarBtn}>↩ Undo</button>
-          <button onClick={actions.redo} disabled={!actions.canRedo} style={toolbarBtn}>↪ Redo</button>
-          <div style={{ flex: 1 }} />
-          <button onClick={() => setPreviewMode(true)} style={toolbarBtn}>👁 Preview</button>
-          {onExportJson && <button onClick={() => onExportJson(page)} style={toolbarBtn}>📦 JSON</button>}
-          {onExportHtml && <button onClick={() => onExportHtml(renderToHtml(page, { fullDocument: true }))} style={toolbarBtn}>🌐 HTML</button>}
+        <div className="sticky top-0 z-10 px-4 py-2.5 bg-white/80 backdrop-blur-xl border-b border-gray-200 flex items-center gap-2">
+          <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg">
+            <button onClick={actions.undo} disabled={!actions.canUndo} className="px-3 py-1.5 rounded-md text-xs font-medium hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">↩ Undo</button>
+            <button onClick={actions.redo} disabled={!actions.canRedo} className="px-3 py-1.5 rounded-md text-xs font-medium hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">↪ Redo</button>
+          </div>
+          <div className="flex-1" />
+          <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg">
+            <button onClick={() => setPreviewMode(true)} className="px-3 py-1.5 rounded-md text-xs font-medium hover:bg-white transition-colors">👁 Preview</button>
+            {onExportJson && <button onClick={() => onExportJson(page)} className="px-3 py-1.5 rounded-md text-xs font-medium hover:bg-white transition-colors">📦 JSON</button>}
+            {onExportHtml && <button onClick={() => onExportHtml(renderToHtml(page, { fullDocument: true }))} className="px-3 py-1.5 rounded-md text-xs font-medium hover:bg-white transition-colors">🌐 HTML</button>}
+          </div>
         </div>
 
-        {/* Block Catalog (overlay) */}
+        {/* Block Catalog */}
         {showCatalog && (
-          <div style={{ position: 'absolute', top: 48, left: 0, right: 0, zIndex: 20, background: 'white', borderBottom: '2px solid #3b82f6', padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.5rem' }}>
-            {getAllBlocks().map((block) => (
-              <button key={block.type} onClick={() => addBlock(block.type as SectionType)} style={{ padding: '1rem 0.5rem', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', textAlign: 'center', fontSize: '0.8rem' }}>
-                <div style={{ fontSize: '1.5rem', marginBottom: 4 }}>{block.icon}</div>
-                {block.label}
-              </button>
-            ))}
+          <div className="absolute top-12 left-0 right-0 z-20 bg-white border-b-2 border-blue-500 p-4 shadow-xl">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3">
+              {getAllBlocks().map((block) => (
+                <button key={block.type} onClick={() => addBlock(block.type as SectionType)} className="p-4 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-2xl cursor-pointer text-center transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="text-2xl mb-2">{block.icon}</div>
+                  <div className="text-xs font-medium text-gray-700">{block.label}</div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
         {/* Page canvas */}
-        <div style={{ maxWidth: 960, margin: '1rem auto', background: 'white', borderRadius: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', minHeight: '80vh' }}>
+        <div className="max-w-[960px] mx-auto my-6 bg-white rounded-2xl shadow-sm ring-1 ring-gray-200 min-h-[80vh] overflow-hidden">
           {sorted.filter((s) => s.visible).map((section) => (
             <div
               key={section.id}
               onClick={() => setSelectedId(section.id)}
-              style={{ position: 'relative', cursor: 'pointer', outline: selectedId === section.id ? '2px solid #3b82f6' : '2px solid transparent', outlineOffset: -2, borderRadius: 4, transition: 'outline 0.15s' }}
+              className={`relative cursor-pointer transition-all duration-150 ${
+                selectedId === section.id ? 'ring-2 ring-blue-500 ring-inset rounded-lg' : 'hover:ring-2 hover:ring-blue-200 hover:ring-inset rounded-lg'
+              }`}
             >
               <SectionRender section={section} />
               {selectedId === section.id && (
-                <div style={{ position: 'absolute', top: 4, right: 4, background: '#3b82f6', color: 'white', padding: '2px 8px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 600 }}>
+                <div className="absolute top-3 right-3 px-2.5 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-lg">
                   {getBlock(section.type)?.label ?? section.type}
                 </div>
               )}
             </div>
           ))}
           {sorted.length === 0 && (
-            <div style={{ padding: '4rem', textAlign: 'center', opacity: 0.4 }}>
-              <p style={{ fontSize: '1.25rem' }}>No sections yet</p>
-              <p>Click "+ Add Block" to get started</p>
+            <div className="flex flex-col items-center justify-center py-32 text-gray-300">
+              <div className="text-6xl mb-4">🎨</div>
+              <p className="text-lg font-medium">No sections yet</p>
+              <p className="text-sm">Click &quot;+ Add Block&quot; to get started</p>
             </div>
           )}
         </div>
       </main>
 
       {/* ── RIGHT: Props Panel ── */}
-      <aside style={{ width: 300, background: '#f9fafb', borderLeft: '1px solid #e5e7eb', overflow: 'auto' }}>
-        <div style={{ padding: '0.75rem', borderBottom: '1px solid #e5e7eb', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280' }}>
-          Properties
+      <aside className="w-[300px] bg-white border-l border-gray-200 overflow-auto">
+        <div className="px-4 py-3 border-b border-gray-200">
+          <span className="font-bold text-xs uppercase tracking-wider text-gray-400">Properties</span>
         </div>
         {selected ? (
-          <div style={{ padding: '0.75rem' }}>
-            <div style={{ fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-              {selectedBlock?.icon} {selectedBlock?.label ?? selected.type}
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
+              <span className="text-xl">{selectedBlock?.icon}</span>
+              <span className="font-bold text-gray-900">{selectedBlock?.label ?? selected.type}</span>
             </div>
-            <PropsEditor
-              props={selected.props}
-              onChange={(newProps) => actions.updateSectionProps(selected.id, newProps)}
-            />
+            <PropsEditor props={selected.props} onChange={(newProps) => actions.updateSectionProps(selected.id, newProps)} />
             {/* Style section */}
-            <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
-              <div style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.8rem', color: '#6b7280' }}>STYLE</div>
-              <label style={labelStyle}>Background Color
-                <input type="color" value={selected.style?.backgroundColor ?? '#ffffff'} onChange={(e) => actions.updateSectionStyle(selected.id, { backgroundColor: e.target.value })} style={{ width: '100%', height: 32 }} />
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <div className="font-bold text-xs uppercase tracking-wider text-gray-400 mb-4">Style</div>
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700 mb-4">
+                Background Color
+                <div className="flex gap-2 items-center">
+                  <input type="color" value={selected.style?.backgroundColor ?? '#ffffff'} onChange={(e) => actions.updateSectionStyle(selected.id, { backgroundColor: e.target.value })} className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer" />
+                  <input type="text" value={selected.style?.backgroundColor ?? '#ffffff'} onChange={(e) => actions.updateSectionStyle(selected.id, { backgroundColor: e.target.value })} className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs font-mono" />
+                </div>
               </label>
-              <label style={labelStyle}>Padding
-                <input type="text" value={selected.style?.padding ?? ''} placeholder="e.g. 4rem 2rem" onChange={(e) => actions.updateSectionStyle(selected.id, { padding: e.target.value })} style={inputStyle} />
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
+                Padding
+                <input type="text" value={selected.style?.padding ?? ''} placeholder="e.g. 4rem 2rem" onChange={(e) => actions.updateSectionStyle(selected.id, { padding: e.target.value })} className="px-3 py-2 border border-gray-200 rounded-xl text-sm" />
               </label>
             </div>
           </div>
         ) : (
-          <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.4 }}>
-            <p>Select a section to edit its properties</p>
+          <div className="flex flex-col items-center justify-center py-20 text-gray-300">
+            <div className="text-4xl mb-3">👈</div>
+            <p className="text-sm font-medium">Select a section to edit</p>
           </div>
         )}
       </aside>
@@ -188,46 +200,43 @@ export const LandingEditor: FC<LandingEditorProps> = ({ page, actions, className
   );
 };
 
-// ─── Props Editor (auto-generates form from props) ──────
+// ─── Props Editor ───────────────────────────────────────
 
 const PropsEditor: FC<{ props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }> = ({ props, onChange }) => {
   const update = (key: string, value: unknown) => onChange({ [key]: value });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+    <div className="flex flex-col gap-4">
       {Object.entries(props).map(([key, value]) => {
         if (Array.isArray(value)) {
           return <ArrayField key={key} label={key} items={value} onChange={(v) => update(key, v)} />;
         }
-        if (typeof value === 'object' && value !== null) {
-          return null; // Skip nested objects for now
-        }
+        if (typeof value === 'object' && value !== null) return null;
         if (typeof value === 'boolean') {
           return (
-            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input type="checkbox" checked={value} onChange={(e) => update(key, e.target.checked)} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>{humanize(key)}</span>
+            <label key={key} className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" checked={value} onChange={(e) => update(key, e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{humanize(key)}</span>
             </label>
           );
         }
         if (typeof value === 'number') {
           return (
-            <label key={key} style={labelStyle}>
-              {humanize(key)}
-              <input type="number" value={value} onChange={(e) => update(key, Number(e.target.value))} style={inputStyle} />
+            <label key={key} className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-gray-700">{humanize(key)}</span>
+              <input type="number" value={value} onChange={(e) => update(key, Number(e.target.value))} className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
             </label>
           );
         }
-        // Default: string
         const strVal = String(value ?? '');
         const isLong = strVal.length > 60;
         return (
-          <label key={key} style={labelStyle}>
-            {humanize(key)}
+          <label key={key} className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-gray-700">{humanize(key)}</span>
             {isLong ? (
-              <textarea value={strVal} onChange={(e) => update(key, e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+              <textarea value={strVal} onChange={(e) => update(key, e.target.value)} rows={3} className="px-3 py-2 border border-gray-200 rounded-xl text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
             ) : (
-              <input type="text" value={strVal} onChange={(e) => update(key, e.target.value)} style={inputStyle} />
+              <input type="text" value={strVal} onChange={(e) => update(key, e.target.value)} className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
             )}
           </label>
         );
@@ -242,39 +251,41 @@ const ArrayField: FC<{ label: string; items: unknown[]; onChange: (items: unknow
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, padding: '0.5rem' }}>
-      <button onClick={() => setExpanded(!expanded)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', width: '100%', textAlign: 'left', display: 'flex', justifyContent: 'space-between' }}>
-        {humanize(label)} ({items.length})
-        <span>{expanded ? '▲' : '▼'}</span>
+    <div className="border border-gray-200 rounded-2xl overflow-hidden">
+      <button onClick={() => setExpanded(!expanded)} className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+        <span>{humanize(label)} <span className="text-gray-400 font-normal">({items.length})</span></span>
+        <svg className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
       </button>
       {expanded && (
-        <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="px-3 pb-3 space-y-2">
           {items.map((item, i) => (
-            <div key={i} style={{ padding: '0.5rem', background: '#f9fafb', borderRadius: 4, position: 'relative' }}>
-              <div style={{ fontSize: '0.7rem', color: '#6b7280', marginBottom: 4 }}>#{i + 1}</div>
+            <div key={i} className="relative p-3 bg-gray-50 rounded-xl">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">#{i + 1}</div>
               {typeof item === 'object' && item !== null ? (
-                Object.entries(item as Record<string, unknown>).map(([k, v]) => (
-                  typeof v === 'string' || typeof v === 'number' ? (
-                    <label key={k} style={{ ...labelStyle, marginBottom: 4 }}>
-                      {humanize(k)}
-                      <input type={typeof v === 'number' ? 'number' : 'text'} value={String(v)} onChange={(e) => {
-                        const updated = [...items];
-                        updated[i] = { ...(item as Record<string, unknown>), [k]: typeof v === 'number' ? Number(e.target.value) : e.target.value };
-                        onChange(updated);
-                      }} style={inputStyle} />
-                    </label>
-                  ) : null
-                ))
+                <div className="space-y-2">
+                  {Object.entries(item as Record<string, unknown>).map(([k, v]) => (
+                    typeof v === 'string' || typeof v === 'number' ? (
+                      <label key={k} className="flex flex-col gap-1">
+                        <span className="text-xs font-medium text-gray-500">{humanize(k)}</span>
+                        <input type={typeof v === 'number' ? 'number' : 'text'} value={String(v)} onChange={(e) => {
+                          const updated = [...items];
+                          updated[i] = { ...(item as Record<string, unknown>), [k]: typeof v === 'number' ? Number(e.target.value) : e.target.value };
+                          onChange(updated);
+                        }} className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </label>
+                    ) : null
+                  ))}
+                </div>
               ) : (
-                <input type="text" value={String(item)} onChange={(e) => { const u = [...items]; u[i] = e.target.value; onChange(u); }} style={inputStyle} />
+                <input type="text" value={String(item)} onChange={(e) => { const u = [...items]; u[i] = e.target.value; onChange(u); }} className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs" />
               )}
-              <button onClick={() => onChange(items.filter((_, j) => j !== i))} style={{ position: 'absolute', top: 4, right: 4, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#ef4444' }}>✕</button>
+              <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded-md hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors text-xs">✕</button>
             </div>
           ))}
           <button onClick={() => {
             const template = items.length > 0 && typeof items[0] === 'object' ? Object.fromEntries(Object.keys(items[0] as Record<string, unknown>).map((k) => [k, ''])) : '';
             onChange([...items, template]);
-          }} style={{ padding: '0.25rem', background: '#e5e7eb', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.75rem' }}>
+          }} className="w-full py-2 text-xs font-medium text-gray-500 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 rounded-lg transition-colors">
             + Add item
           </button>
         </div>
@@ -283,11 +294,11 @@ const ArrayField: FC<{ label: string; items: unknown[]; onChange: (items: unknow
   );
 };
 
-// ─── Section Renderer wrapper ───────────────────────────
+// ─── Section Renderer ───────────────────────────────────
 
 const SectionRender: FC<{ section: Section }> = ({ section }) => {
   const block = getBlock(section.type);
-  if (!block) return <div style={{ padding: '2rem', background: '#fef3c7' }}>Unknown: {section.type}</div>;
+  if (!block) return <div className="p-8 bg-amber-50 text-amber-800 text-sm">Unknown block: {section.type}</div>;
   const Component = block.renderer as FC<Record<string, unknown>>;
   return <Component {...section.props} />;
 };
@@ -297,8 +308,3 @@ const SectionRender: FC<{ section: Section }> = ({ section }) => {
 function humanize(s: string): string {
   return s.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).replace(/([a-z])([A-Z])/g, '$1 $2');
 }
-
-const inputStyle: React.CSSProperties = { width: '100%', padding: '0.35rem 0.5rem', border: '1px solid #d1d5db', borderRadius: 4, fontSize: '0.8rem', boxSizing: 'border-box' };
-const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2, fontSize: '0.8rem', fontWeight: 500 };
-const iconBtn: React.CSSProperties = { background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', padding: '0 2px' };
-const toolbarBtn: React.CSSProperties = { padding: '0.35rem 0.75rem', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: 4, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 };

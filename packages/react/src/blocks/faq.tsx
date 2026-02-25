@@ -7,22 +7,29 @@ const Faq: FC<FaqProps> = ({ headline, items }) => {
   const toggle = (i: number) => setOpen((prev) => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
 
   return (
-    <div className="px-6 py-20 md:py-28 max-w-3xl mx-auto">
-      <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-center mb-16">{headline}</h2>
-      <div className="space-y-4">
-        {items.map((item, i) => (
-          <div key={i} className="rounded-2xl border border-gray-200 overflow-hidden transition-colors hover:border-gray-300">
-            <button onClick={() => toggle(i)} className="w-full flex items-center justify-between p-6 text-left bg-white hover:bg-gray-50 transition-colors">
-              <span className="text-lg font-semibold text-gray-900 pr-4">{item.question}</span>
-              <svg className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-200 ${open.has(i) ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-            </button>
-            <div className={`overflow-hidden transition-all duration-200 ${open.has(i) ? 'max-h-96' : 'max-h-0'}`}>
-              <p className="px-6 pb-6 text-gray-500 leading-relaxed">{item.answer}</p>
-            </div>
-          </div>
-        ))}
+    <section className="px-6 py-24 md:py-32">
+      <div className="max-w-3xl mx-auto">
+        <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-center mb-16 animate-fade-in-up">{headline}</h2>
+        <div className="space-y-3">
+          {items.map((item, i) => {
+            const isOpen = open.has(i);
+            return (
+              <div key={i} className={`rounded-2xl border transition-all duration-300 ${isOpen ? 'border-blue-200 bg-blue-50/30 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                <button onClick={() => toggle(i)} className="w-full flex items-center justify-between p-6 text-left">
+                  <span className="text-lg font-semibold text-gray-900 pr-4">{item.question}</span>
+                  <div className={`w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0 transition-all duration-300 ${isOpen ? 'bg-blue-500 text-white rotate-180' : 'bg-gray-100 text-gray-500'}`}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                  </div>
+                </button>
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <p className="px-6 pb-6 text-gray-500 leading-relaxed">{item.answer}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
 
