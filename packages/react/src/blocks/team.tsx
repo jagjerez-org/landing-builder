@@ -3,16 +3,22 @@ import React from 'react';
 import type { TeamProps, BlockDefinition } from '@landing-builder/core';
 
 const Team: FC<TeamProps> = ({ headline, subheadline, members }) => (
-  <div style={{ padding: '4rem 2rem', maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
-    <h2 style={{ fontSize: '2rem', fontWeight: 700 }}>{headline}</h2>
-    {subheadline && <p style={{ opacity: 0.7, marginBottom: '2rem' }}>{subheadline}</p>}
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(members.length, 4)}, 1fr)`, gap: '2rem', marginTop: '2rem' }}>
+  <div className="px-6 py-20 md:py-28 max-w-6xl mx-auto">
+    <div className="text-center mb-16">
+      <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">{headline}</h2>
+      {subheadline && <p className="text-lg text-gray-500 max-w-2xl mx-auto">{subheadline}</p>}
+    </div>
+    <div className={`grid gap-8 md:grid-cols-${Math.min(members.length, 4)}`}>
       {members.map((m, i) => (
-        <div key={i} style={{ textAlign: 'center' }}>
-          {m.avatar ? <img src={m.avatar} alt={m.name} style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', margin: '0 auto 1rem' }} /> : <div style={{ width: 96, height: 96, borderRadius: '50%', background: '#e5e7eb', margin: '0 auto 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>{m.name[0]}</div>}
-          <h3 style={{ fontWeight: 600, margin: '0.25rem 0' }}>{m.name}</h3>
-          <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>{m.role}</p>
-          {m.bio && <p style={{ fontSize: '0.875rem', opacity: 0.7, marginTop: '0.5rem' }}>{m.bio}</p>}
+        <div key={i} className="group text-center">
+          {m.avatar ? (
+            <img src={m.avatar} alt={m.name} className="w-28 h-28 rounded-2xl object-cover mx-auto mb-4 ring-4 ring-gray-100 group-hover:ring-blue-100 transition-all shadow-md" />
+          ) : (
+            <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 ring-4 ring-gray-100 shadow-md">{m.name[0]}</div>
+          )}
+          <h3 className="text-lg font-semibold text-gray-900">{m.name}</h3>
+          <p className="text-sm text-blue-600 font-medium mb-2">{m.role}</p>
+          {m.bio && <p className="text-sm text-gray-500">{m.bio}</p>}
         </div>
       ))}
     </div>
@@ -22,9 +28,9 @@ const Team: FC<TeamProps> = ({ headline, subheadline, members }) => (
 export const TeamBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'team', label: 'Team', icon: '👥', category: 'content',
   renderer: Team as unknown as FC<Record<string, unknown>>,
-  defaultProps: { headline: 'Meet the team', members: [
-    { name: 'Alex Kim', role: 'CEO', bio: 'Visionary leader' },
-    { name: 'Jordan Lee', role: 'CTO', bio: 'Tech architect' },
-    { name: 'Sam Patel', role: 'Design Lead', bio: 'Pixel perfectionist' },
+  defaultProps: { headline: 'Meet the team', subheadline: 'The people behind the product', members: [
+    { name: 'Alex Kim', role: 'CEO & Co-founder', bio: 'Previously VP Engineering at Stripe' },
+    { name: 'Jordan Lee', role: 'CTO & Co-founder', bio: 'Built systems serving 100M+ users' },
+    { name: 'Sam Patel', role: 'Head of Design', bio: 'Former design lead at Figma' },
   ]},
 };

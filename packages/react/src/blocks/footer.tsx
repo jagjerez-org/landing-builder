@@ -2,32 +2,44 @@ import type { FC } from 'react';
 import React from 'react';
 import type { FooterProps, BlockDefinition } from '@landing-builder/core';
 
-const Footer: FC<FooterProps> = ({ tagline, links, socials, copyright }) => (
-  <footer style={{ padding: '3rem 2rem', borderTop: '1px solid #e5e7eb', maxWidth: 1200, margin: '0 auto' }}>
-    {tagline && <p style={{ fontWeight: 600, marginBottom: '1rem' }}>{tagline}</p>}
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', marginBottom: '1.5rem' }}>
-      {Object.entries(links.reduce<Record<string, typeof links>>((acc, l) => { (acc[l.group || 'Links'] ??= []).push(l); return acc; }, {})).map(([group, groupLinks]) => (
-        <div key={group}>
-          <h4 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem', opacity: 0.6, textTransform: 'uppercase' }}>{group}</h4>
-          {groupLinks.map((l, i) => <a key={i} href={l.url} style={{ display: 'block', textDecoration: 'none', color: 'inherit', opacity: 0.8, padding: '0.15rem 0', fontSize: '0.9rem' }}>{l.label}</a>)}
+const Footer: FC<FooterProps> = ({ tagline, links, socials, copyright }) => {
+  const groups = links.reduce<Record<string, typeof links>>((acc, l) => { (acc[l.group || 'Links'] ??= []).push(l); return acc; }, {});
+
+  return (
+    <footer className="px-6 py-16 border-t border-gray-100">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between gap-12 mb-12">
+          <div className="max-w-sm">
+            {tagline && <div className="text-xl font-bold mb-3">{tagline}</div>}
+            <div className="flex gap-4 mt-4">
+              {socials.map((s, i) => (
+                <a key={i} href={s.url} className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors text-sm font-medium">{s.platform[0]}</a>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-12">
+            {Object.entries(groups).map(([group, groupLinks]) => (
+              <div key={group}>
+                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">{group}</h4>
+                <ul className="space-y-3">
+                  {groupLinks.map((l, i) => <li key={i}><a href={l.url} className="text-gray-600 hover:text-gray-900 transition-colors">{l.label}</a></li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
-    </div>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid #e5e7eb', fontSize: '0.875rem', opacity: 0.6 }}>
-      <span>{copyright}</span>
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        {socials.map((s, i) => <a key={i} href={s.url} style={{ textDecoration: 'none', color: 'inherit' }}>{s.platform}</a>)}
+        <div className="pt-8 border-t border-gray-100 text-sm text-gray-400">{copyright}</div>
       </div>
-    </div>
-  </footer>
-);
+    </footer>
+  );
+};
 
 export const FooterBlock: BlockDefinition<FC<Record<string, unknown>>> = {
   type: 'footer', label: 'Footer', icon: '🔗', category: 'navigation',
   renderer: Footer as unknown as FC<Record<string, unknown>>,
-  defaultProps: { tagline: 'Built with Landing Builder', links: [
-    { label: 'Home', url: '#', group: 'Product' }, { label: 'Features', url: '#features', group: 'Product' },
-    { label: 'Pricing', url: '#pricing', group: 'Product' }, { label: 'Privacy', url: '#', group: 'Legal' },
-    { label: 'Terms', url: '#', group: 'Legal' },
-  ], socials: [{ platform: 'Twitter', url: '#' }, { platform: 'GitHub', url: '#' }], copyright: '© 2026 Company. All rights reserved.' },
+  defaultProps: { tagline: 'Landing Builder', links: [
+    { label: 'Features', url: '#', group: 'Product' }, { label: 'Pricing', url: '#', group: 'Product' }, { label: 'Changelog', url: '#', group: 'Product' },
+    { label: 'Documentation', url: '#', group: 'Developers' }, { label: 'API Reference', url: '#', group: 'Developers' },
+    { label: 'Privacy', url: '#', group: 'Legal' }, { label: 'Terms', url: '#', group: 'Legal' },
+  ], socials: [{ platform: 'Twitter', url: '#' }, { platform: 'GitHub', url: '#' }, { platform: 'LinkedIn', url: '#' }], copyright: '© 2026 Company. All rights reserved.' },
 };
